@@ -62,9 +62,6 @@ int send_data(HANDLE hComm, BYTE *data, DWORD data_len)
         return -1;
     }
 
-    //printf("data=%s\n", data);
-
-#if 1
    if (WriteFile(hComm, data, data_len, &written_bytes, NULL) == 0) {
         return 1;
    }
@@ -72,17 +69,7 @@ int send_data(HANDLE hComm, BYTE *data, DWORD data_len)
         printf("Warning: write %d bytes, written %d bytes\n",
             data_len, written_bytes);
     }
-#else
-    while (data_len--) {
-        if (WriteFile(hComm, data++, 1, &written_bytes, NULL) == 0) {
-            return 1;
-        }
-        if (written_bytes != 1) {
-            printf("Warning: write %d bytes, written %d bytes\n",
-                data_len, written_bytes);
-        }
-    }
-#endif
+
     return 0;
 }
 
@@ -99,4 +86,33 @@ DWORD receive_data(HANDLE hComm, BYTE *data, DWORD data_len)
     }
     return readed;
 }
+
+void crc8_calc(uint8_t *crc, uint8_t data)
+{
+    volatile uint8_t mask;
+    volatile int8_t i;
+
+    for (i = 0; i < 8; i++) {
+        mask = (*crc & 0x1) ^ (data & 0x1);
+        data >>=  1;
+        *crc >>=  1;
+        
+        if (mask == 1) {
+            *crc ^= POLINOM;
+        }
+    }
+}
+
+int hex_symbol_to_digit(char symbol, uint8_t *digit)
+{
+    if (symbol >= 'A' && symbol <= 'F') {
+        *digit = symbol - 'A' + 10;
+    } else if (symbol >= '0' && symbol <= '9') {
+        *digit = symbol - '0';
+    } else {
+        return -1;
+    }
+    return 0;
+}
+
 
